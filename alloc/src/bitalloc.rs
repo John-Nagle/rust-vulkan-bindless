@@ -6,27 +6,28 @@
 //! November, 2024
 //!
 use anyhow::{anyhow, Error};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
-/// Our bitmap is an array of these. u64 if necessary, u128 if atomics are available.
-type WordType = AtomicUsize;
-const WORDSIZE: usize = usize::BITS as usize;
-const WORDALLONES: usize = !0; // this had better be the all ones value
+/// Our bitmap is an array of these. u64 if necessary, u128 if atomics that large are widely available.
+type WordType = u64;
+type AtomicWordType = AtomicU64;
+const WORDSIZE: usize = WordType::BITS as usize;
+const WORDALLONES: WordType = !0; // this had better be the all ones value
 
 /// Bit allocator
 pub struct BitAlloc {
     /// Search start position
     search_pos: AtomicUsize,
     /// The bitmap itself
-    b: Vec<WordType>,
+    b: Vec<AtomicWordType>,
 }
 
 impl BitAlloc {
     pub fn new(size: usize) -> Self {
-        assert!(WORDALLONES == usize::MAX); // check on constant
+        assert!(WORDALLONES == WordType::MAX); // check on constant
         let word_count = (size + WORDSIZE - 1) / WORDSIZE; // number of words
-        let mut b: Vec<AtomicUsize> = Vec::new();
-        b.resize_with(word_count, || AtomicUsize::new(0));
+        let mut b: Vec<AtomicWordType> = Vec::new();
+        b.resize_with(word_count, || AtomicWordType::new(0));
         Self {
             search_pos: AtomicUsize::new(0),
             b,
@@ -67,17 +68,20 @@ impl BitAlloc {
                 //  But we have to test that with an atomic operation.
                 let bit = find_first_one_bit(!val).expect("find_first_one_bit failure");
                 let newval = val | (1 << bit); // new value for bitmap word
-                                               //  Now try to insert that into the map with a compare and swap.
-                                               //  If that fails, we have to try again.
-
+                                               
+                //  Now try to insert that into the map with a compare and swap.
+                //  If that fails, we have to try again.
                 let swap_result =
                     self.b[word].compare_exchange(val, newval, Ordering::SeqCst, Ordering::Relaxed);
                 if let Ok(_) = swap_result {
+                    //  Update search start position to try from here next time.
+                    //  ***MORE***
+                    //  Return position of bit just set.
                     return Some(word as usize * usize::BITS as usize + bit as usize);
                 }
                 //  Compare and swap failed. Some other thread updated this value.
-                println!("Race condition in alloc_bit, retrying"); // ***TEMP*** should be very rare
-                                                                   //  Have to try again
+                println!("Race condition in alloc_bit, retrying"); // ***TEMP*** should be very rare                                      
+                //  Have to try again
             }
         }
         None // bitmap is full
@@ -90,7 +94,7 @@ impl BitAlloc {
 }
 
 /// Find first one bit. Should be an intrinsic.
-fn find_first_one_bit(v: usize) -> Option<u32> {
+fn find_first_one_bit(v: WordType) -> Option<u32> {
     for bit in 0..usize::BITS {
         if v & (1 << bit) == 1 {
             return Some(bit);
