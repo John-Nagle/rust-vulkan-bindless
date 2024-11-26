@@ -4,3 +4,4 @@
 //! Animats
 //! November, 2024
 //!
+mod bitalloc;

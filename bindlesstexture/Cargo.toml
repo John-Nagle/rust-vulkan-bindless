@@ -9,6 +9,5 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
-#   Rendering-related
 anyhow = "1"
 env_logger = "0.10.1"
