@@ -1,0 +1,44 @@
+#
+#   Bindless texture support for Vulkan.
+#
+#   Top-level Cargo.toml file. Builds everything.
+#
+#   Animats
+#   November, 2024
+#
+#
+# Usable targets:
+# native (on Linux)
+# x86_64-pc-windows-gnu
+#
+#   Build everything
+[workspace]
+resolver = "2"
+members = [
+    "bindlesstexture",
+    "alloc",
+
+]
+
+default-members = [
+    "bindlesstexture",
+    "alloc",
+
+]
+
+[profile.release]
+debug = true
+lto = "thin"
+
+#   Use to enable extra checking. Too slow for production.
+[profile.checkedrelease]
+inherits = "release"
+debug-assertions = true
+
+#   Use only when cross-compiling to target "x86_64-pc-windows-gnu"
+#   Ref Rust bug #98302. lto = "thin" fails for target x86_64-pc-windows-gnu. "fat" works, but means minutes-longer link times and more than 8GB of RAM to link.
+[profile.winrelease]
+inherits = "release"
+lto = "fat"
+
+[workspace.dependencies]

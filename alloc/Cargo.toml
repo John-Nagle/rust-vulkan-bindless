@@ -1,0 +1,12 @@
+[package]
+name = "alloc"
+description = "GPU-side buffer allocation"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+#   Rendering-related
+env_logger = "0.10"
