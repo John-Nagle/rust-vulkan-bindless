@@ -5,30 +5,31 @@
 //! Animats
 //! November, 2024
 //!
+use anyhow::{anyhow, Error};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use anyhow::{Error, anyhow};
 
 /// Our bitmap is an array of these. u64 if necessary, u128 if atomics are available.
 type WordType = AtomicUsize;
 const WORDSIZE: usize = usize::BITS as usize;
-const WORDALLONES: usize = usize::MAX;  // this had better be the all ones value
+const WORDALLONES: usize = !0; // this had better be the all ones value
 
 /// Bit allocator
 pub struct BitAlloc {
     /// Search start position
     search_pos: AtomicUsize,
     /// The bitmap itself
-    b: Vec<WordType>
+    b: Vec<WordType>,
 }
 
 impl BitAlloc {
     pub fn new(size: usize) -> Self {
-        let word_count = (size + WORDSIZE - 1) / WORDSIZE;   // number of words
+        assert!(WORDALLONES == usize::MAX); // check on constant
+        let word_count = (size + WORDSIZE - 1) / WORDSIZE; // number of words
         let mut b: Vec<AtomicUsize> = Vec::new();
         b.resize_with(word_count, || AtomicUsize::new(0));
         Self {
             search_pos: AtomicUsize::new(0),
-            b
+            b,
         }
     }
 
@@ -36,33 +37,64 @@ impl BitAlloc {
     pub fn get_bit(&self, ix: usize) -> bool {
         let (word, bit) = Self::word_bit(ix);
         if word < self.b.len() {
-            (self.b[word].load(Ordering::SeqCst) >> bit) & 0x1 == 1    // bit as bool
+            (self.b[word].load(Ordering::SeqCst) >> bit) & 0x1 == 1 // bit as bool
         } else {
             false
         }
     }
-    
+
     /// Clear one bit. It is a error to clear an un-set bit.
     pub fn clear_bit(&self, ix: usize) -> Result<(), Error> {
         let (word, bit) = Self::word_bit(ix);
         if word < self.b.len() {
-            todo!();    // Has to be done atomically
+            todo!(); // Has to be done atomically
         } else {
             Err(anyhow!("Bitalloc clear_bit index out of range."))
-        }       
+        }
     }
-    
+
     /// Allocate a bit, if any are available.
     pub fn alloc_bit(&self) -> Option<usize> {
         for word in self.search_pos.load(Ordering::SeqCst)..self.b.len() {
-            let val = self.b[word].load(Ordering::SeqCst);
-            // ***MORE***
+            //  Retry loop for atomic CAS
+            loop {
+                let val = self.b[word].load(Ordering::SeqCst); // get word
+                if val == WORDALLONES {
+                    // if all ones, done with inner loop, continue outer loo[
+                    break;
+                }
+                //  There may be an open slot in this word.
+                //  But we have to test that with an atomic operation.
+                let bit = find_first_one_bit(!val).expect("find_first_one_bit failure");
+                let newval = val | (1 << bit); // new value for bitmap word
+                                               //  Now try to insert that into the map with a compare and swap.
+                                               //  If that fails, we have to try again.
+
+                let swap_result =
+                    self.b[word].compare_exchange(val, newval, Ordering::SeqCst, Ordering::Relaxed);
+                if let Ok(_) = swap_result {
+                    return Some(word as usize * usize::BITS as usize + bit as usize);
+                }
+                //  Compare and swap failed. Some other thread updated this value.
+                println!("Race condition in alloc_bit, retrying"); // ***TEMP*** should be very rare
+                                                                   //  Have to try again
+            }
         }
-        todo!();    // UNIMPLEMENTED
+        None // bitmap is full
     }
-    
+
     /// Which word and bit for an index
     fn word_bit(index: usize) -> (usize, usize) {
         (index / WORDSIZE, index % WORDSIZE)
     }
+}
+
+/// Find first one bit. Should be an intrinsic.
+fn find_first_one_bit(v: usize) -> Option<u32> {
+    for bit in 0..usize::BITS {
+        if v & (1 << bit) == 1 {
+            return Some(bit);
+        }
+    }
+    None // no find
 }
