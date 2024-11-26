@@ -66,9 +66,12 @@ impl BitAlloc {
                 }
                 //  There may be an open slot in this word.
                 //  But we have to test that with an atomic operation.
-                let bit = find_first_one_bit(!val).expect("find_first_one_bit failure");
+                let trail = (!val).trailing_zeros(); // find first zero bit.
+                assert!(trail > 0); // There has to be a zero bit because the word is not all ones.
+                let bit = trail - 1;
+                /////let bit = find_first_one_bit(!val).expect("find_first_one_bit failure");
                 let newval = val | (1 << bit); // new value for bitmap word
-                                               
+
                 //  Now try to insert that into the map with a compare and swap.
                 //  If that fails, we have to try again.
                 let swap_result =
@@ -80,8 +83,8 @@ impl BitAlloc {
                     return Some(word as usize * usize::BITS as usize + bit as usize);
                 }
                 //  Compare and swap failed. Some other thread updated this value.
-                println!("Race condition in alloc_bit, retrying"); // ***TEMP*** should be very rare                                      
-                //  Have to try again
+                println!("Race condition in alloc_bit, retrying"); // ***TEMP*** should be very rare
+                                                                   //  Have to try again
             }
         }
         None // bitmap is full
@@ -92,7 +95,7 @@ impl BitAlloc {
         (index / WORDSIZE, index % WORDSIZE)
     }
 }
-
+/*
 /// Find first one bit. Should be an intrinsic.
 fn find_first_one_bit(v: WordType) -> Option<u32> {
     for bit in 0..usize::BITS {
@@ -102,3 +105,4 @@ fn find_first_one_bit(v: WordType) -> Option<u32> {
     }
     None // no find
 }
+*/
