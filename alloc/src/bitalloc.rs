@@ -85,11 +85,8 @@ impl BitAlloc {
                 }
                 //  There may be an open slot in this word.
                 //  But we have to test that with an atomic operation.
-                let trail = (!val).trailing_zeros(); // find first zero bit.
-                println!("val: {:#x} trail: {}", val, trail);// ***TEMP***
-                ////assert!(trail > 0); // There has to be a zero bit because the word is not all ones.
-                let bit = trail;
-                /////let bit = find_first_one_bit(!val).expect("find_first_one_bit failure");
+                let bit = (!val).trailing_zeros(); // find first zero bit.
+                println!("val: {:#x} bit: {}", val, bit);// ***TEMP***
                 let newval = val | (1 << bit); // new value for bitmap word
 
                 //  Now try to insert that into the map with a compare and swap.
@@ -139,9 +136,23 @@ fn test_bitalloc_basics() {
         .filter_map(|n| if item.get_bit(n) { Some(n) } else { None })
         .collect()
     }
-    //  Try some operations
+    //  Try some basic operations
     let bit_alloc = BitAlloc::new(1000);
     let v0 = bit_alloc.alloc_bit().unwrap();
+    assert_eq!(v0, 0);
     let v1 = bit_alloc.alloc_bit().unwrap();
-    assert_eq!(bit_list(&bit_alloc), [0, 1]);
+    assert_eq!(v1, 1);
+    let v2 = bit_alloc.alloc_bit().unwrap();
+    assert_eq!(v2, 2);
+    assert_eq!(bit_list(&bit_alloc), [0, 1, 2]);
+    bit_alloc.clear_bit(v1);
+    assert_eq!(bit_list(&bit_alloc), [0, 2]);
+    for i in 0..500 {
+        let _ = bit_alloc.alloc_bit().unwrap();
+    }
+    //  Construct expected result.
+    let mut vlist: Vec<usize> = [0, 1, 2].to_vec();
+    let vlist1: Vec<usize> = (3..502).map(|n: usize| n).collect();
+    vlist.extend(vlist1);
+    assert_eq!(bit_list(&bit_alloc), vlist);
 }
