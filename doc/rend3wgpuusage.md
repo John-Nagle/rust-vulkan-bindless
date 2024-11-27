@@ -223,6 +223,14 @@ Usages:
     
 ### In tests simple.rs
     use wgpu::FrontFace;
+    
+## Initial classification
+These types from WGPU can be classified as
+
+- Can be copied literally from WGPU
+- Maps directly to some type in Ash/Vulkan
+- Needs new implementation
+- Needs redesign due to movement of allocation to the *rust-vulkan-bindless* level.
 
 
 
