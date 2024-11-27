@@ -33,6 +33,11 @@ impl BitAlloc {
             b,
         }
     }
+    
+    /// Length, in bits
+    pub fn len(&self) -> usize {
+        self.b.len() * WORDSIZE
+    }
 
     /// Get one bit. Not atomic
     pub fn get_bit(&self, ix: usize) -> bool {
@@ -48,7 +53,20 @@ impl BitAlloc {
     pub fn clear_bit(&self, ix: usize) -> Result<(), Error> {
         let (word, bit) = Self::word_bit(ix);
         if word < self.b.len() {
-            todo!(); // Has to be done atomically
+            //  Retry loop for atomic CAS
+            loop {
+                let val = self.b[word].load(Ordering::SeqCst); // get word
+                let newval = val & !(1<<bit);       // clear bit
+                let swap_result =
+                        self.b[word].compare_exchange(val, newval, Ordering::SeqCst, Ordering::Relaxed);
+                if swap_result.is_ok() {
+                    break;
+                }
+                println!("Race condition in clear_bit, retrying"); // ***TEMP***
+            }
+            //  Updated successfuly. Update start position for next search if this is the new min
+            let _ = self.search_pos.fetch_min(word,  Ordering::Relaxed);
+            Ok(())
         } else {
             Err(anyhow!("Bitalloc clear_bit index out of range."))
         }
@@ -56,7 +74,8 @@ impl BitAlloc {
 
     /// Allocate a bit, if any are available.
     pub fn alloc_bit(&self) -> Option<usize> {
-        for word in self.search_pos.load(Ordering::SeqCst)..self.b.len() {
+        let start_pos = self.search_pos.load(Ordering::SeqCst);
+        for word in start_pos..self.b.len() {
             //  Retry loop for atomic CAS
             loop {
                 let val = self.b[word].load(Ordering::SeqCst); // get word
@@ -67,8 +86,9 @@ impl BitAlloc {
                 //  There may be an open slot in this word.
                 //  But we have to test that with an atomic operation.
                 let trail = (!val).trailing_zeros(); // find first zero bit.
-                assert!(trail > 0); // There has to be a zero bit because the word is not all ones.
-                let bit = trail - 1;
+                println!("val: {:#x} trail: {}", val, trail);// ***TEMP***
+                ////assert!(trail > 0); // There has to be a zero bit because the word is not all ones.
+                let bit = trail;
                 /////let bit = find_first_one_bit(!val).expect("find_first_one_bit failure");
                 let newval = val | (1 << bit); // new value for bitmap word
 
@@ -78,7 +98,11 @@ impl BitAlloc {
                     self.b[word].compare_exchange(val, newval, Ordering::SeqCst, Ordering::Relaxed);
                 if let Ok(_) = swap_result {
                     //  Update search start position to try from here next time.
-                    //  ***MORE***
+                    let pos_result = self.search_pos.compare_exchange(word, start_pos, Ordering::Relaxed, Ordering::Relaxed);
+                    if let Err(_) = pos_result {
+                        //  This is just an unsucessful optimization
+                        println!("Race condition in alloc_bit pos update, harmless");
+                    }
                     //  Return position of bit just set.
                     return Some(word as usize * usize::BITS as usize + bit as usize);
                 }
@@ -106,3 +130,18 @@ fn find_first_one_bit(v: WordType) -> Option<u32> {
     None // no find
 }
 */
+#[test]
+/// Basic test. Does this work at all?
+fn test_bitalloc_basics() {
+    /// Build up a list of bits
+    fn bit_list(item: &BitAlloc) -> Vec<usize> {
+        (0..item.len())
+        .filter_map(|n| if item.get_bit(n) { Some(n) } else { None })
+        .collect()
+    }
+    //  Try some operations
+    let bit_alloc = BitAlloc::new(1000);
+    let v0 = bit_alloc.alloc_bit().unwrap();
+    let v1 = bit_alloc.alloc_bit().unwrap();
+    assert_eq!(bit_list(&bit_alloc), [0, 1]);
+}
