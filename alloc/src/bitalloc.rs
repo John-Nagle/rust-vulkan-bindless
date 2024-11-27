@@ -155,4 +155,5 @@ fn test_bitalloc_basics() {
     let vlist1: Vec<usize> = (3..502).map(|n: usize| n).collect();
     vlist.extend(vlist1);
     assert_eq!(bit_list(&bit_alloc), vlist);
+    assert!(false);
 }
