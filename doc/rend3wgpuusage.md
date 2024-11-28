@@ -232,5 +232,33 @@ These types from WGPU can be classified as
 - Needs new implementation
 - Needs redesign due to movement of allocation to the *rust-vulkan-bindless* level.
 
+## The major types from WGPU
+These are the ones which have significant implementations behind them.
+
+### Device
+Ref: https://github.com/gfx-rs/wgpu/blob/1a643291c2e8854ba7e4f5445a4388202731bfa1/wgpu/src/api/device.rs#L32
+
+*Device* has the creation functions for most of the major structs - Buffer, Texture, PipelineLayout, etc.
+It's mostly a container for *Data*, which is an *Any*.
+
+There's extensive indirection here, because WGPU supports so many back ends.
+
+### Buffer
+Different for different back ends.
+Encapulates wgt::BufferAddress
+Not much bookeeping info.
+
+Seems to be a Vulkan-level big buffer, not a user-level buffer.
+Has raw GPU addresses.
+
+### CommandEncoder
+
+### Texture
+
+### RenderPass
+
+### PipelineLayout
+
+### BindGroup
 
 
