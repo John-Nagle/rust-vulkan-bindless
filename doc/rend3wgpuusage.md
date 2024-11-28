@@ -261,4 +261,34 @@ Has raw GPU addresses.
 
 ### BindGroup
 
+## Implementation plan
+Get something working and advance to more complex things working.
+### Phase I 
+- Start with the simplest cube example from WGPU tests.
+- Create stubs for everything it calls.
+- Implement and test allocation without actually doing graphics.
+- Run example to test and log allocation
+- Add actual Ash/Vulkan graphics and test.
+
+### Phase II
+- Make phase I example bindless.
+- Test with large number of objects.
+
+### Phase III
+- Expand to more complex examples.
+
+### Phase IV
+- Integrate with Rend3.
+- Get cube example working.
+- Get scene-viewer example working.
+
+### Phase V
+- Get render-bench working.
+- Get render-bench working in bindless mode.
+- Benchmark
+
+### Phase VI
+- Convert Sharpview
+- Benchmark
+
 
