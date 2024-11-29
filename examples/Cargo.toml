@@ -6,9 +6,16 @@ authors = ["John Nagle <nagle@animats.com>"]
 edition = "2021"
 
 [dependencies]
+vgpu = { path = "../vgpu" }
 anyhow = "1"
 env_logger = "0.10.1"
+winit = "0.30"
 
 [[example]]
 name = "hello_triangle"
 path = "src/hello_triangle/mod.rs"
+
+#   Not yet
+#[[example]]
+#name = "cube"
+#path = "src/cube/mod.rs"

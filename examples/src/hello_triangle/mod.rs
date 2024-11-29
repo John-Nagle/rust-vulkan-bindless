@@ -4,6 +4,7 @@ use winit::{
     event_loop::EventLoop,
     window::Window,
 };
+use vgpu as wgpu;   // Testing a WGPU test against VGPU
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut size = window.inner_size();
