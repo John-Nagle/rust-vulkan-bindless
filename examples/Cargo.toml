@@ -1,0 +1,45 @@
+[package]
+name = "vgpu-examples"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description = "VGPU examples"
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+path = "src/lib.rs"
+harness = false
+
+[[bin]]
+name = "vbpu-examples"
+path = "src/main.rs"
+test = false
+
+[features]
+
+[dependencies]
+bytemuck = { workspace = true, features = ["derive"] }
+cfg-if.workspace = true
+encase = { workspace = true, features = ["glam"] }
+flume.workspace = true
+getrandom.workspace = true
+glam = { workspace = true, features = ["bytemuck"] }
+ktx2.workspace = true
+log.workspace = true
+nanorand.workspace = true
+noise.workspace = true
+obj.workspace = true
+png.workspace = true
+pollster.workspace = true
+web-time.workspace = true
+winit.workspace = true
+
+[dev-dependencies]
+#   Vulkan only.
+wgpu-test.workspace = true
+env_logger.workspace = true
+

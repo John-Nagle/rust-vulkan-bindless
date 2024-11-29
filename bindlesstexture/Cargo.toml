@@ -1,6 +1,6 @@
 [package]
-name = "bindlesstexture"
-description = "Support for bindless textures in Vulkan"
+name = "vgpu"
+description = "VGPU - support for bindless textures in Vulkan"
 version = "0.1.0"
 authors = ["John Nagle <nagle@animats.com>"]
 edition = "2021"
@@ -11,3 +11,7 @@ path = "src/lib.rs"
 [dependencies]
 anyhow = "1"
 env_logger = "0.10.1"
+
+[[example]]
+name = "hello-triangle"
+path = "src/examples/hello-triangle/lib.rs"

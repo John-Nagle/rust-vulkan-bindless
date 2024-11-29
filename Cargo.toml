@@ -42,3 +42,8 @@ inherits = "release"
 lto = "fat"
 
 [workspace.dependencies]
+
+[[example]]
+name = "hello-triangle"
+path = "src/examples/hello-triangle/lib.rs"
+
