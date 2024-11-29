@@ -11,4 +11,5 @@ path = "src/lib.rs"
 [dependencies]
 anyhow = "1"
 env_logger = "0.10.1"
+winit = "0.30"
 
