@@ -14,4 +14,4 @@ env_logger = "0.10.1"
 
 [[example]]
 name = "hello-triangle"
-path = "src/examples/hello-triangle/lib.rs"
+path = "src/examples/src/hello_triangle/mod.rs"

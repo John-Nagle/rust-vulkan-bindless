@@ -15,13 +15,13 @@
 [workspace]
 resolver = "2"
 members = [
-    "bindlesstexture",
+    "vgpu",
     "alloc",
 
 ]
 
 default-members = [
-    "bindlesstexture",
+    "vgpu",
     "alloc",
 
 ]
@@ -42,8 +42,4 @@ inherits = "release"
 lto = "fat"
 
 [workspace.dependencies]
-
-[[example]]
-name = "hello-triangle"
-path = "src/examples/hello-triangle/lib.rs"
 
