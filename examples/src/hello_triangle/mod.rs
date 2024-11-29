@@ -1,10 +1,13 @@
+//! Thisis a test from WGPU, being used as a compatibiilty test for VGPU.
+//! License: MIT
+use vgpu as wgpu;   // Testing a WGPU test against VGPU
+
 use std::borrow::Cow;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::EventLoop,
     window::Window,
 };
-use vgpu as wgpu;   // Testing a WGPU test against VGPU
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut size = window.inner_size();
@@ -33,6 +36,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 // Make sure we use the texture resolution limits from the adapter, so we can support images the size of the swapchain.
                 required_limits: wgpu::Limits::downlevel_webgl2_defaults()
                     .using_resolution(adapter.limits()),
+                memory_hints: wgpu::MemoryHints::MemoryUsage,
             },
             None,
         )
@@ -59,13 +63,13 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         layout: Some(&pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shader,
-            entry_point: "vs_main",
+            entry_point: Some("vs_main"),
             buffers: &[],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             compilation_options: Default::default(),
             targets: &[Some(swapchain_format.into())],
         }),
