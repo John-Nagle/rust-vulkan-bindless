@@ -39,9 +39,11 @@ impl Limits {
 }
 
 /// PrimitiveState
+#[derive(Default)]
 pub struct PrimitiveState{}
 
 /// MultisampleState
+#[derive(Default)]
 pub struct MultisampleState{}
 
 

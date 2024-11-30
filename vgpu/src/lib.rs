@@ -11,4 +11,4 @@ pub mod wgputypes;
 //  Exports
 pub use stubs::{Instance, PowerPreference, Features, Limits, PrimitiveState, MultisampleState };
 
-pub use wgputypes::{Color, LoadOp, StoreOp, Operations};
+pub use wgputypes::{Color, LoadOp, StoreOp, Operations, MemoryHints};
