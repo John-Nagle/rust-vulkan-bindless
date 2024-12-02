@@ -243,6 +243,8 @@ It's mostly a container for *Data*, which is an *Any*.
 
 There's extensive indirection here, because WGPU supports so many back ends.
 
+Textures seem to be created at https://github.com/gfx-rs/wgpu/blob/trunk/wgpu-core/src/device/resource.rs#L726
+
 ### Buffer
 Different for different back ends.
 Encapulates wgt::BufferAddress

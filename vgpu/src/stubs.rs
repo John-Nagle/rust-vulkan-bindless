@@ -16,6 +16,17 @@ impl Instance {
 
 pub struct Surface {}
 
+impl Surface {
+        pub fn get_capabilities(&self, adapter: &Adapter) -> SurfaceCapabilities {
+        todo!()
+    }
+
+}
+
+pub struct SurfaceCapabilities {}
+
+pub struct Adapter{}
+
 /// PowerPreference
 #[derive(Default)]
 pub struct PowerPreference{}
