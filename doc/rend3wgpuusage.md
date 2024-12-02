@@ -256,12 +256,34 @@ Has raw GPU addresses.
 ### CommandEncoder
 
 ### Texture
+Texture seems to be a synonym for Resource.
+
+### TextureDescriptor
+Ref: https://github.com/gfx-rs/wgpu/blob/5e52a313b996344b67838c459b3e5f4ca0c3b322/wgpu-types/src/lib.rs#L6087
 
 ### RenderPass
 
 ### PipelineLayout
 
 ### BindGroup
+
+## Memory allocation
+### Heap questions
+(asked in r/vulkan)
+
+Ref: https://media.gdcvault.com/gdc2018/presentations/Sawicki_Adam_Memory%20management%20in%20Vulkan.pdf
+
+The Vulkan spec is very general in this area. There are a huge number of options.
+
+The Vulkan spec says there's some number of heaps for each implementation. There's no indication in the spec of how many. One? Two? 65535? I gather from this 2018 GDC presentation that there are very few, rarely more than three. Apparently there is rarely if ever more than one heap of a given type. Is that correct? The main types seem to be unshared CPU memory, unshared device memory, and various slow shared variants which may or may not be supported. Or the other extreme, the integrated graphics case, where everything is in one memory system. Are those pretty much the real world options, or are there other variants?
+
+The Vulkan spec describes allocate and free functions. But the GDC presentation indicates these are very limited, or at least were back in 2018. The number of allocations is limited; that presentation suggests 4K. (Where does that number come from? Can it be read from the Vulkan API?) So you can't just allocate space for each texture with its own Vulkan allocate call. I think. The general idea seems to be to allocate big blocks (256MB was suggested) and then subdivide them with some kind of suballocator. Is that correct? Any comments on memory fragmentation problems.
+
+Finding out how much device local memory is available was apparently hard back in 2018. Is that fixed? What's best practice today on getting a lot of device memory but not locking up the system because you grabbed all of it and nothing else can run?
+
+Spilling from device memory to slower CPU memory accessed via the PCI bus is apparently something some Vulkan implementations can do. Or will do without being asked. When that happens, there's a big performance drop. How is that detected, prevented, or managed?
+
+Is there something I should read that's more current than that 2018 presentation but covers the same material? Thanks. 
 
 ## Implementation plan
 Get something working and advance to more complex things working.
