@@ -267,7 +267,60 @@ Ref: https://github.com/gfx-rs/wgpu/blob/5e52a313b996344b67838c459b3e5f4ca0c3b32
 
 ### BindGroup
 
+## Mappings
+WGPU to Vulkan type mappings: https://github.com/gfx-rs/wgpu/blob/00625a711a5aa0d08f4ed46757394373fcf4ff10/wgpu-hal/src/vulkan/conv.rs
+
 ## Memory allocation
+### How doess create_texture work in WGPU?
+    grep -r device_create_texture
+
+grep -r "device_create_texture"
+
+Definitions found:
+
+- wgpu/src/context.rs:    fn device_create_texture(
+Part of trait Context - no implementation
+- wgpu/src/context.rs:    fn device_create_texture(
+Part of trait DynContext - no implementation 
+- wgpu/src/context.rs:    fn device_create_texture(
+    // Blanket impl of DynContext for all types which implement Context
+    let data = Context::device_create_texture(self, device_data, desc);
+    
+  but where is that?
+- wgpu/src/backend/wgpu_core.rs:    fn device_create_texture(
+This doesn't do the work. It calls:
+
+    let (id, error) = self
+        .0
+        .device_create_texture(device_data.id, &wgt_desc, None);
+       
+but where is the **device_create_texture** it is calling?
+ 
+This is inside
+    impl crate::Context for ContextWgpuCore
+          
+- wgpu/src/backend/webgpu.rs:    fn device_create_texture(
+- wgpu-core/src/device/global.rs:    pub fn device_create_texture(
+this is part of Global, and actually implements device_create_texture.
+But it calls
+    let texture = match device.create_texture(desc)
+ 
+to do the work. Now need to find that.
+
+Found it: https://github.com/gfx-rs/wgpu/blob/trunk/wgpu-hal/src/vulkan/device.rs#L1159
+And there is the call to the allocator.
+
+But where is the Vulkan suballocator? The Direct-X back end has a suballocator, but haven't found the Vulkan one yet.
+
+It's using: https://crates.io/crates/gpu-alloc
+
+There's a note:
+
+    // TODO(#5925): The plan is to switch the Vulkan backend from `gpu_alloc` to
+    // `gpu_allocator` which has a different (simpler) set of configuration options.
+    
+For that, see https://crates.io/crates/gpu-allocator
+
 ### Heap questions
 (asked in r/vulkan)
 
