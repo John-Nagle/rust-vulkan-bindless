@@ -1,0 +1,13 @@
+[package]
+name = "descriptor"
+description = "Bindless descriptor"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+log = "0.4"
+ash = "0.38"
