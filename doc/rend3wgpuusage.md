@@ -368,4 +368,142 @@ Get something working and advance to more complex things working.
 - Convert Sharpview
 - Benchmark
 
+# New approach - fork and mod WGPU
+## Proposed approach to allocation
+
+- Allocate textures as usual, with create_texture.
+
+- Bindless mode would only be implemented for Vulkan, for now.
+
+- Bindless textures are immutable. The life cycle of a bindless texture is allocate buffer, fill buffer, give texture to bindless subsystem, draw texture on multiple frames, drop descriptor handle, wait for end of frame, clear descriptor slot and release it, drop texture. This simplifies locking and synchronization.
+
+- A texture is made bindless by calling a new API call to move it to the new bindless subsystem. This allocates a free slot in the bindless descriptor table and a matching table CPU side that owns the bindless textures. A handle to the bindless slot is returned. This can happen at any time, from any thread, including during drawing.
+
+- Empty slots in the bindless descriptor table are either filled with the Vulkan NULL_HANDLE, which skips rendering. or, for debug purposes, a link to an ugly purple texture with the text "Descriptor index error".
+
+- The draw loop is just draw, draw, draw. No bind calls. It should be possible to draw without locking anything per-draw. That's a goal here - eliminate lock stalls inside drawing. Binding and content loading contend for some of the same resources, which is why multi-thread content loading kills render performance now. Bindless drawing should overcome that problem.
+
+- Descriptor handles are set up for RAII, so dropping one releases the descriptor slot and associated texture. The caller can drop a descriptor handle at any time from any thread. That queues up a delete which will take place at the end of the frame. This prevents deleting a texture out from under a shader.
+
+## Scheduling
+- create_bindless_texture has to return a handle from which a bindless descriptor index can be extracted.
+
+- How do we know when the content is loaded into the texture? Does the creation call block waiting for the transfer to complete?
+
+- If there's only one queue, will this be a bottleneck? If there's only one thread and no separate transfer queue, will this be a bottleneck?
+
+## The descriptor table
+- Use-after-bind mode.
+- Writeable by CPU
+- Readable by GPU.
+
+Looking in Orbit for their code to create a descriptor pool.
+
+https://github.com/Thefefe/orbit/blob/8ff1b3d3f934a3cd5e1778df1f4290668acd912b/src/graphics/device.rs#L961
+
+Vulkan ref: https://registry.khronos.org/vulkan/specs/latest/man/html/VkDescriptorPoolCreateInfo.html
+
+Need to encapsulate the descriptor pool(s) in a Rust object.
+
+All descriptor types are: Self::StorageBuffer, Self::SampledImage, Self::StorageImage
+
+All those pools are initialized to their maximum size for the version of Vulkan?
+
+## Notes
+
+Need to understand how this affects shaders.
+
+# Available rendering stacks
+Here are four Rust rendering stacks which target Vulkan. All of these are able to render glTF scenes.
+All of these could potentially be used for 3D work which doesn't push the limits of compute resources.
+This evaluation is about what to do when you need large scene graphics power.
+The question is usually whether you run out of CPU or GPU first. 
+## Bevy->WGPU
+https://bevyengine.org/
+
+Bevy has its own renderer, atop WGPU.
+
+Pro: 
+- Reasonably mature.
+- Sizable user community.
+- Supports many targets.
+- Supports general dynamic asset creation/destruction.
+- Supports lighting and shadows.
+
+Con:
+- Not really usable without the full Bevy game engine. Assumes ECS object management.
+- Performance on complex scenes is limited.
+- No bindless mode.
+
+Summary:
+
+Using the full Bevy game engine is probably the easiest way to do a 3D game in Rust.
+It's not intended for use as a separate renderer.
+## Rend3->WGPU
+https://github.com/BVE-Reborn/rend3
+
+Pro:
+- Several years old. Works reasonably well.
+- Well thought out API.
+- Supports many targets.
+- Supports general dynamic asset creation/destruction.
+- Lighting and shadows implemented, although slow.
+- Asset loading during rendering possible but impacts frame rate.
+
+Con: 
+- Abandonware.
+- Shadow rendering is brute-force, all objects vs all lights on all frames.
+- Performance on complex scenes is limited.
+- No bindless mode.
+
+Summary:
+
+Usable, but unmaintained.
+
+## Renderling->WGPU
+https://renderling.xyz/
+
+Rendering is a new renderer. 
+
+Pro:
+- Does more in the GPU than some others.
+- Supports many targets.
+- Has some financial support from the European Union.
+- World illuminated by an HDR skybox image.
+
+Con:
+- Very new. No user community.
+- No bindless mode.
+- Does not support general asset creation/destruction.
+- No punctual lights yet.
+
+Summary:
+
+Technically interesting but not ready for use. Worth following progress.
+## Orbit->Vulkan
+https://github.com/Thefefe/orbit
+
+Orbit is a new "toy" renderer. It's able to render glTF scenes as complex as the Bistro demo.
+It goes directly to Vulkan and uses modern rendering technologies. It's a one-level system; there's no
+cross-plaform layer. So it's simpler but less portable.
+
+Pro:
+- Supports bindless mode.
+- World illuminated by an HDR skybox image.
+- Beginnings of punctual light support.
+- Beginnings of translucency support.
+
+Con:
+- Unfinished. Very early in its life cycle.
+- No support.
+- No documentation.
+- Few comments.
+- Doesn't really have an API, just a glTF loader.
+- Does not support seem to support general asset creation/destruction. Not a fundamental limitation, just lacks the API for it.
+- Only targets Vulkan.
+
+Summary:
+
+Technically interesting but not ready for use. Worth following the technology used.
+
 
