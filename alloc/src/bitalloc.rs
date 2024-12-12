@@ -20,6 +20,10 @@ pub struct BitAlloc {
     search_pos: AtomicUsize,
     /// The bitmap itself
     b: Vec<AtomicWordType>,
+    /// Statistics - requests
+    alloc_count: AtomicU64,
+    /// Statistics - word earches
+    search_count: AtomicU64,
 }
 
 impl BitAlloc {
@@ -31,6 +35,8 @@ impl BitAlloc {
         Self {
             search_pos: AtomicUsize::new(0),
             b,
+            alloc_count: Default::default(),
+            search_count: Default::default(),
         }
     }
 
@@ -62,7 +68,7 @@ impl BitAlloc {
                 if swap_result.is_ok() {
                     break;
                 }
-                println!("Race condition in clear_bit, retrying"); // ***TEMP***
+                log::warn!("Race condition in clear_bit, retrying"); 
             }
             //  Updated successfuly. Update start position for next search if this is the new min
             let _ = self.search_pos.fetch_min(word, Ordering::Relaxed);
@@ -74,9 +80,11 @@ impl BitAlloc {
 
     /// Allocate a bit, if any are available.
     pub fn alloc_bit(&self) -> Option<usize> {
+        let _ = self.alloc_count.fetch_add(1, Ordering::Relaxed);    // tally words searched
         let start_pos = self.search_pos.load(Ordering::SeqCst);
         for word in start_pos..self.b.len() {
             //  Retry loop for atomic CAS
+            let _ = self.search_count.fetch_add(1, Ordering::Relaxed);    // tally words searched
             loop {
                 let val = self.b[word].load(Ordering::SeqCst); // get word
                 if val == WORDALLONES {
@@ -102,15 +110,16 @@ impl BitAlloc {
                         Ordering::Relaxed,
                     );
                     if let Err(_) = pos_result {
-                        //  This is just an unsucessful optimization
-                        println!("Race condition in alloc_bit pos update, harmless");
+                        //  This is just an unsucessful optimization. Next search may be slightly slower.
+                        log::info!("Race condition in alloc_bit pos update, harmless");
                     }
                     //  Return position of bit just set.
                     return Some(word as usize * usize::BITS as usize + bit as usize);
                 }
                 //  Compare and swap failed. Some other thread updated this value.
-                println!("Race condition in alloc_bit, retrying"); // ***TEMP*** should be very rare
-                                                                   //  Have to try again
+                log::warn!("Race condition in alloc_bit, retrying"); // should be very rare
+                
+                //  Have to try again
             }
         }
         None // bitmap is full
@@ -122,9 +131,20 @@ impl BitAlloc {
     }
 }
 
+impl Drop for BitAlloc {
+    fn drop(&mut self) {
+        //  Performance statistics
+        log::info!("BitAlloc stats: {} allocations, {} words searched.", 
+            self.alloc_count.load(Ordering::Relaxed),
+            self.search_count.load(Ordering::Relaxed));
+    }
+}
+
 #[test]
 /// Basic test. Does this work at all?
 fn test_bitalloc_basics() {
+    use simplelog::{SimpleLogger, LevelFilter, Config};
+    let _ = SimpleLogger::init(LevelFilter::Info, Config::default());   // log to standard output
     /// Build up a list of bits
     fn bit_list(item: &BitAlloc) -> Vec<usize> {
         (0..item.len())
@@ -142,7 +162,7 @@ fn test_bitalloc_basics() {
     assert_eq!(bit_list(&bit_alloc), [0, 1, 2]);
     bit_alloc.clear_bit(v1).unwrap();
     assert_eq!(bit_list(&bit_alloc), [0, 2]);
-    /// Allocate 500 multiple words and see if that works.
+    // Allocate 500 multiple words and see if that works.
     for _ in 0..500 {
         let _ = bit_alloc.alloc_bit().unwrap();
     }

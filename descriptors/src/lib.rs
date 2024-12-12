@@ -4,4 +4,4 @@
 //! Animats
 //! November, 2024
 //!
-mod descriptors;
+////// ***TEMP TURNOFF*** mod descriptors;
