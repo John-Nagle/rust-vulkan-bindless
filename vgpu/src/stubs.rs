@@ -1,12 +1,12 @@
 //! stubs.rs -- dummy stubs to be replaced with real code.
 
+use anyhow::Error;
 /// These are types that WGPU defines and which must be emulated.
 
 /// Instance
-use winit::window::{Window};
-use anyhow::{Error};
+use winit::window::Window;
 #[derive(Default)]
-pub struct Instance{}
+pub struct Instance {}
 
 impl Instance {
     pub fn create_surface(&self, _window: &Window) -> Result<Surface, Error> {
@@ -17,22 +17,21 @@ impl Instance {
 pub struct Surface {}
 
 impl Surface {
-        pub fn get_capabilities(&self, adapter: &Adapter) -> SurfaceCapabilities {
+    pub fn get_capabilities(&self, adapter: &Adapter) -> SurfaceCapabilities {
         todo!()
     }
-
 }
 
 pub struct SurfaceCapabilities {}
 
-pub struct Adapter{}
+pub struct Adapter {}
 
 /// PowerPreference
 #[derive(Default)]
-pub struct PowerPreference{}
+pub struct PowerPreference {}
 
 /// Features
-pub struct Features{}
+pub struct Features {}
 
 impl Features {
     pub fn empty() -> Self {
@@ -41,7 +40,7 @@ impl Features {
 }
 
 /// Limits
-pub struct Limits{}
+pub struct Limits {}
 
 impl Limits {
     pub fn downlevel_webgl2_defaults() -> Self {
@@ -51,12 +50,11 @@ impl Limits {
 
 /// PrimitiveState
 #[derive(Default)]
-pub struct PrimitiveState{}
+pub struct PrimitiveState {}
 
 /// MultisampleState
 #[derive(Default)]
-pub struct MultisampleState{}
-
+pub struct MultisampleState {}
 
 /*  --> examples/src/hello_triangle/mod.rs:14:26
    |

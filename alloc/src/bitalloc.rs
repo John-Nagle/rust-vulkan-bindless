@@ -1,10 +1,10 @@
 //! # Bitalloc -- lockless allocator for bits in a large bitmap.
-
 //!
 //! John Nagle
 //! Animats
 //! November, 2024
 //!
+#![forbid(unsafe_code)]
 use anyhow::{anyhow, Error};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
@@ -68,7 +68,7 @@ impl BitAlloc {
                 if swap_result.is_ok() {
                     break;
                 }
-                log::warn!("Race condition in clear_bit, retrying"); 
+                log::warn!("Race condition in clear_bit, retrying");
             }
             //  Updated successfuly. Update start position for next search if this is the new min
             let _ = self.search_pos.fetch_min(word, Ordering::Relaxed);
@@ -80,11 +80,11 @@ impl BitAlloc {
 
     /// Allocate a bit, if any are available.
     pub fn alloc_bit(&self) -> Option<usize> {
-        let _ = self.alloc_count.fetch_add(1, Ordering::Relaxed);    // tally words searched
+        let _ = self.alloc_count.fetch_add(1, Ordering::Relaxed); // tally words searched
         let start_pos = self.search_pos.load(Ordering::SeqCst);
         for word in start_pos..self.b.len() {
             //  Retry loop for atomic CAS
-            let _ = self.search_count.fetch_add(1, Ordering::Relaxed);    // tally words searched
+            let _ = self.search_count.fetch_add(1, Ordering::Relaxed); // tally words searched
             loop {
                 let val = self.b[word].load(Ordering::SeqCst); // get word
                 if val == WORDALLONES {
@@ -94,7 +94,6 @@ impl BitAlloc {
                 //  There may be an open slot in this word.
                 //  But we have to test that with an atomic operation.
                 let bit = (!val).trailing_zeros(); // find first zero bit.
-                                                   /////println!("val: {:#x} bit: {}", val, bit);// ***TEMP***
                 let newval = val | (1 << bit); // new value for bitmap word
 
                 //  Now try to insert that into the map with a compare and swap.
@@ -118,7 +117,7 @@ impl BitAlloc {
                 }
                 //  Compare and swap failed. Some other thread updated this value.
                 log::warn!("Race condition in alloc_bit, retrying"); // should be very rare
-                
+
                 //  Have to try again
             }
         }
@@ -134,17 +133,19 @@ impl BitAlloc {
 impl Drop for BitAlloc {
     fn drop(&mut self) {
         //  Performance statistics
-        log::info!("BitAlloc stats: {} allocations, {} words searched.", 
+        log::info!(
+            "BitAlloc stats: {} allocations, {} words searched.",
             self.alloc_count.load(Ordering::Relaxed),
-            self.search_count.load(Ordering::Relaxed));
+            self.search_count.load(Ordering::Relaxed)
+        );
     }
 }
 
 #[test]
 /// Basic test. Does this work at all?
 fn test_bitalloc_basics() {
-    use simplelog::{SimpleLogger, LevelFilter, Config};
-    let _ = SimpleLogger::init(LevelFilter::Info, Config::default());   // log to standard output
+    use simplelog::{Config, LevelFilter, SimpleLogger};
+    let _ = SimpleLogger::init(LevelFilter::Info, Config::default()); // log to standard output
     /// Build up a list of bits
     fn bit_list(item: &BitAlloc) -> Vec<usize> {
         (0..item.len())
@@ -175,7 +176,7 @@ fn test_bitalloc_basics() {
     for _ in 0..99000 {
         let _ = bit_alloc.alloc_bit().unwrap();
     }
-    let efficiency_ratio = 
-        bit_alloc.search_count.load(Ordering::Relaxed) as f64 / bit_alloc.alloc_count.load(Ordering::Relaxed) as f64;
+    let efficiency_ratio = bit_alloc.search_count.load(Ordering::Relaxed) as f64
+        / bit_alloc.alloc_count.load(Ordering::Relaxed) as f64;
     assert!(efficiency_ratio < 1.1); // for this case, it should be small.
 }

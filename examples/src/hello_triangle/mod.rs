@@ -1,6 +1,6 @@
 //! Thisis a test from WGPU, being used as a compatibiilty test for VGPU.
 //! License: MIT
-use vgpu as wgpu;   // Testing a WGPU test against VGPU
+use vgpu as wgpu; // Testing a WGPU test against VGPU
 
 use std::borrow::Cow;
 use winit::{
