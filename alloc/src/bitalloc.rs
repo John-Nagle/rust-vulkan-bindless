@@ -27,6 +27,7 @@ pub struct BitAlloc {
 }
 
 impl BitAlloc {
+    /// Usual new.
     pub fn new(size: usize) -> Self {
         assert!(WORDALLONES == WordType::MAX); // check on constant
         let word_count = (size + WORDSIZE - 1) / WORDSIZE; // number of words
@@ -110,13 +111,13 @@ impl BitAlloc {
                     );
                     if let Err(_) = pos_result {
                         //  This is just an unsucessful optimization. Next search may be slightly slower.
-                        log::info!("Race condition in alloc_bit pos update, harmless");
+                        log::info!("Race condition in alloc_bit pos update, harmless.");
                     }
                     //  Return position of bit just set.
                     return Some(word as usize * usize::BITS as usize + bit as usize);
                 }
                 //  Compare and swap failed. Some other thread updated this value.
-                log::warn!("Race condition in alloc_bit, retrying"); // should be very rare
+                log::warn!("Race condition in alloc_bit, retrying."); // should be very rare
 
                 //  Have to try again
             }
@@ -134,7 +135,8 @@ impl Drop for BitAlloc {
     fn drop(&mut self) {
         //  Performance statistics
         log::info!(
-            "BitAlloc stats: {} allocations, {} words searched.",
+            "BitAlloc stats: Size (bits) {},  {} allocations, {} words searched.",
+            self.len(),
             self.alloc_count.load(Ordering::Relaxed),
             self.search_count.load(Ordering::Relaxed)
         );
