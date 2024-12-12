@@ -152,7 +152,7 @@ fn test_bitalloc_basics() {
             .collect()
     }
     //  Try some basic operations
-    let bit_alloc = BitAlloc::new(1000);
+    let bit_alloc = BitAlloc::new(100000);
     let v0 = bit_alloc.alloc_bit().unwrap();
     assert_eq!(v0, 0);
     let v1 = bit_alloc.alloc_bit().unwrap();
@@ -171,4 +171,11 @@ fn test_bitalloc_basics() {
     let vlist1: Vec<usize> = (3..502).map(|n: usize| n).collect();
     vlist.extend(vlist1);
     assert_eq!(bit_list(&bit_alloc), vlist);
+    //  Do many allocs for performance check.
+    for _ in 0..99000 {
+        let _ = bit_alloc.alloc_bit().unwrap();
+    }
+    let efficiency_ratio = 
+        bit_alloc.search_count.load(Ordering::Relaxed) as f64 / bit_alloc.alloc_count.load(Ordering::Relaxed) as f64;
+    assert!(efficiency_ratio < 1.1); // for this case, it should be small.
 }
