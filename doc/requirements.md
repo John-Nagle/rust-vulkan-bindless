@@ -158,10 +158,10 @@ Not really necessary. But if present, it will be used.
 It's necessary to bolt a 2D layer, for menus and such, onto all this. EGUI seems to be the way to go. Rend3 uses EGUI.
 So an EGUI integration is needed.
 
-## Additional renderers
+## Additional shaders
 - Water (the camera can go underwater)
 - Fog - fade out with distance
-- Skybox
+- Skybox - works fine now.
 
 ## Mirrors
 The Second Life C++ renderer now has full mirror and reflective object support.
