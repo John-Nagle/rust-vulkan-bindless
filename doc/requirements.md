@@ -42,7 +42,7 @@ Non-rigged meshes should use a data structure with no space wasted on weights.
 Meshes are immutable. They can be replaced, but not changed.
 
 #### Texture
-A texture is just an 2D image. No 3D textures. MIP-mapping may be supported.
+A texture is just an 2D image. An alpha channel is optional. No 3D textures. MIP-mapping may be supported.
 
 Textures are immutable. They can be replaced, but not changed.
 
