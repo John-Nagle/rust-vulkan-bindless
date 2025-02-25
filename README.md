@@ -103,5 +103,3 @@ Rust-based texture loading needs to work something like this:
 This allocation machinery belongs inside a crate at the WGPU/Vulkano level, near the top. The point is that it's easier to wrap a safe interface around this functionality than around one that passes GPU buffer addresses around. This approach looks self-sufficient for locking. If the application owns the buffer, it can write it, if the GPU owns the buffer, it can read it, all mapping switches happen when the GPU is at end of frame, but content copying can happen while other things are going on.
 
 The main thing that can go wrong is that a buffer index used by a shader might be invalid. This can be handled by insuring that all unused slots contain a Vulkan null handle value when not pointed at a valid buffer.
-
-
